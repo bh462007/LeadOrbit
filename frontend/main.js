@@ -1,31 +1,25 @@
-
 import { fetchWithAuth, clearTokens } from './api.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // If we're on a public page, do nothing special
-    if (window.location.pathname.includes('login.html') || window.location.pathname.includes('register.html')) {
-        return;
-    }
-
-    // Attempt to fetch profile info on authenticated pages
     try {
+        // 1. Fetch user data from backend on page load
         const res = await fetchWithAuth('/auth/me/');
-        if (!res.ok) throw new Error();
-
         const userData = await res.json();
 
-        // Update UI placeholders generically
+        // 2. Generic UI Display updates
         const userDisplays = document.querySelectorAll('.user-display-name');
         userDisplays.forEach(el => el.textContent = userData.email);
 
         const orgDisplays = document.querySelectorAll('.org-display-name');
         orgDisplays.forEach(el => el.textContent = userData.organization.name);
-        // Populate Gemini fields if we are on the settings page
+
+        // 3. Extract DOM input variables for the settings fields
         const geminiKeyInput = document.getElementById('gemini-api-key');
         const aiPersonalizationToggle = document.getElementById('enable-ai-personalization');
         const orgNameInput = document.getElementById('org-name');
         const orgIdInput = document.getElementById('org-id');
 
+        // 4. Populate values safely into the inputs if the organization exists
         if (userData.organization) {
             if (orgNameInput) orgNameInput.value = userData.organization.name || '';
             if (orgIdInput) orgIdInput.value = userData.organization.id || '';
@@ -34,9 +28,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
     } catch (e) {
-        // Automatically redirects to login via fetchWithAuth on 401
-        // Handle Settings Form Submission
-    const orgNameInput = document.getElementById('org-name');
+        // Capture any profile data rendering errors safely
+        console.error("Error loading user profile settings:", e);
+    }
+
+    // 5. Handle logout attachments
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            clearTokens();
+            window.location.href = '/login.html';
+        });
+    }
+});
     if (orgNameInput) {
         // Find the closest parent card form or button to attach save logic
         const saveBtn = document.querySelector('button[type="submit"]') || orgNameInput.closest('.glass-card');
