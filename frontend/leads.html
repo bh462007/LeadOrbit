@@ -152,7 +152,7 @@
                     </a>
                 </li>
                 <li class="nav-item mb-2">
-                    <a href="/leads.html" class="nav-link d-flex align-items-center" aria-current="page">
+                    <a href="/leads.html" class="nav-link d-flex align-items-center">
                         <i class="bi bi-people me-2" aria-hidden="true"></i> Leads
                     </a>
                 </li>
@@ -179,6 +179,7 @@
 
         <main class="main-area">
             <header class="top-header">
+
                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
                     <button id="hamburger-btn" class="btn d-lg-none p-1" aria-label="Toggle menu">
                         <i class="bi bi-list fs-4" aria-hidden="true"></i>
@@ -205,6 +206,17 @@
                     </div>
                 </div>
             </header>
+            
+            <nav aria-label="breadcrumb" class="mt-2 px-3">
+                <ol class="breadcrumb small">
+                    <li class="breadcrumb-item">
+                        <a href="dashboard.html">Dashboard</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                         Leads
+                    </li>
+                </ol>
+            </nav>
 
             <nav aria-label="breadcrumb" class="container mt-3">
                 <ol class="breadcrumb">
@@ -295,7 +307,9 @@
                 </div>
                 <!-- ─────────────────────────────────────────────────────────── -->
 
+
                 <!-- Import History Table -->
+
                 <div class="table-shell mb-4">
                     <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 px-3 py-3 border-bottom">
                         <div>
@@ -429,11 +443,12 @@
         import { fetchWithAuth } from './api.js';
 
         // ─── State ──────────────────────────────────────────────────────────
-        let allLeads = [];
-        let allTags = [];
-        let allImportJobs = [];
-        let selectedTagIds = new Set();
-        let activeFilters = {};
+
+        let allLeads = [];           // full unfiltered list (client-side search backup)
+        let allTags = [];            // all org tags (for the filter panel)
+        let allImportJobs = [];      // import job history
+        let selectedTagIds = new Set(); // tags selected in the filter panel
+        let activeFilters = {};      // last applied filter state
 
         // ─── Utilities ──────────────────────────────────────────────────────
 
@@ -677,6 +692,7 @@
             } else {
                 dot.classList.remove('visible');
             }
+
             const row = document.getElementById('active-filters-row');
             const chips = [];
             if (params.tags) {
@@ -744,8 +760,9 @@
             renderImportHistory(allImportJobs);
         }
 
-        // ─── Text search ─────────────────────────────────────────────────────
 
+        // ─── Text search (client-side, applied on top of server results) ────
+      
         function applySearch() {
             const q = (document.getElementById('lead-search').value || '').trim().toLowerCase();
             if (!q) {
@@ -814,7 +831,12 @@
                     });
                     if (res.status === 202) {
                         statusEl.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>File uploaded. Processing now...</span>';
-                        setTimeout(() => window.location.reload(), 1800);
+
+                        await loadLeads();
+                        await loadImportHistory();
+                        fileInput.value = '';
+                        bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadModal')).hide();
+
                     } else {
                         statusEl.innerHTML = '<span class="text-danger"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Upload failed.</span>';
                     }
